@@ -1,0 +1,136 @@
+buildscript {
+    repositories {
+        if (project.gradle.startParameter.offline) {
+            maven {
+                url = uri('E:/DEV/.m2')
+            }
+            //mavenLocal()
+            flatDir {
+                dirs 'E:/DEV/needJar'
+            }
+        } else {
+            //gradlePluginPortal()
+            mavenCentral()
+        }
+    }
+    dependencies {
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.5.4'
+        classpath 'io.spring.gradle:dependency-management-plugin:1.1.7'
+    }
+}
+
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.4'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'idv.pd'
+version = '0.0.1-SNAPSHOT'
+
+tasks.withType(JavaCompile) {
+    sourceCompatibility = '21'
+    targetCompatibility = '21'
+    options.encoding = 'UTF-8'
+}
+
+compileJava.dependsOn clean
+
+sourceSets.main.output.resourcesDir = file('$buildDir/resources')
+ext {
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+    println project.gradle.startParameter.offline
+    if (project.gradle.startParameter.offline) {
+        maven {
+            url = uri('E:/DEV/.m2')
+        }
+        //mavenLocal()
+        flatDir {
+           dirs 'E:/DEV/needJar'
+        }
+    } else {
+        //gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+task cacheToLocal(type: Copy) {
+    //enabled = false
+    //project.delete(files('E:/DEV/needJar') {})
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+	from new File(gradle.gradleUserHomeDir, 'caches/modules-2/files-2.1')
+	into 'E:/DEV/needJar'
+	eachFile {
+	    List<String> parts = it.path.split('/')
+	    it.path = parts[4]
+	}
+	includeEmptyDirs = false
+}
+
+task cacheToMavenLocal(type: Copy) {
+    //enabled = false
+    //project.delete(files('E:/DEV/.m2') {})
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+	from new File(gradle.gradleUserHomeDir, 'caches/modules-2/files-2.1')
+	into 'E:/DEV/.m2'
+	eachFile {
+	    List<String> parts = it.path.split('/')
+	    //it.path = (parts[0] + '/' + parts[1]).replace('.', '/') + '/' + parts[2] + '/' + parts[4] // 舊版寫法
+	    it.path = parts[0].replace('.', '/') + '/' + parts[1] + '/' + parts[2] + '/' + parts[4]
+	    println "itpath:" + it.path
+	    println "itpath0:" + parts[0]
+	    println "itpath1:" + parts[1]
+	    println "itpath2:" + parts[2]
+	    println "itpath3:" + parts[3]
+	    println "itpath4:" + parts[4]
+	}
+	includeEmptyDirs = false
+}
+
+task printInfo {
+	println gradle.gradleUserHomeDir
+	println gradle.gradleHomeDir
+	println repositories.mavenLocal().url
+}
+
+configure(cacheToLocal) {
+    group = 'jenkins'
+    description = '建立離線Jar'
+}
+
+configure(cacheToMavenLocal) {
+    group = 'jenkins'
+    description = '建立離線Maven Repository'
+}
+
+configure(printInfo) {
+    group = 'jenkins'
+    description = '印出資訊'
+}
