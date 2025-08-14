@@ -2,11 +2,11 @@ buildscript {
     repositories {
         if (project.gradle.startParameter.offline) {
             maven {
-                url = uri('~/localRepo/.m2')
+                url = uri('/home/jenkins/localRepo/.m2')
             }
             //mavenLocal()
             flatDir {
-                dirs '~/localRepo/needJar'
+                dirs '/home/jenkins/localRepo/needJar'
             }
         } else {
             //gradlePluginPortal()
@@ -57,11 +57,11 @@ repositories {
     println project.gradle.startParameter.offline
     if (project.gradle.startParameter.offline) {
         maven {
-            url = uri('~/localRepo/.m2')
+            url = uri('/home/jenkins/localRepo/.m2')
         }
         //mavenLocal()
         flatDir {
-           dirs '~/localRepo/needJar'
+           dirs '/home/jenkins/localRepo/needJar'
         }
     } else {
         //gradlePluginPortal()
