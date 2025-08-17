@@ -2,15 +2,15 @@ buildscript {
     repositories {
         if (project.gradle.startParameter.offline) {
             maven {
-                url = uri('/home/jenkins/localRepo/.m2')
+                url = uri("/home/gogo/localRepo/offline-maven-repo")
             }
             /*
             maven {
-                url = uri('/home/jenkins/localRepo/.m2')
+                url = uri('/home/gogo/localRepo/.m2')
             }
-            //mavenLocal()
+            mavenLocal()
             flatDir {
-                dirs '/home/jenkins/localRepo/needJar'
+                dirs '/home/gogo/localRepo/needJar'
             }
             */
         } else {
@@ -27,7 +27,7 @@ buildscript {
 
 plugins {
 	id 'java'
-	id 'war'
+    id 'war'
 	id 'org.springframework.boot' version '3.5.4'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -42,6 +42,10 @@ tasks.withType(JavaCompile) {
 }
 
 compileJava.dependsOn clean
+
+sourceSets.main.output.resourcesDir = file('$buildDir/resources')
+ext {
+}
 
 java {
 	toolchain {
@@ -59,17 +63,12 @@ repositories {
     println project.gradle.startParameter.offline
     if (project.gradle.startParameter.offline) {
         maven {
-            url = uri('/home/jenkins/localRepo/.m2')
-        }
-        /*
-        maven {
-            url = uri('/home/jenkins/localRepo/.m2')
+            url = uri('/home/gogo/localRepo/.m2')
         }
         //mavenLocal()
         flatDir {
-            dirs '/home/jenkins/localRepo/needJar'
+           dirs '/home/gogo/localRepo/needJar'
         }
-        */
     } else {
         //gradlePluginPortal()
         mavenCentral()
@@ -93,7 +92,7 @@ task cacheToLocal(type: Copy) {
     //project.delete(files('E:/DEV/needJar') {})
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 	from new File(gradle.gradleUserHomeDir, 'caches/modules-2/files-2.1')
-	into 'E:/DEV/needJar'
+	into '/home/gogo/localRepo/needJar'
 	eachFile {
 	    List<String> parts = it.path.split('/')
 	    it.path = parts[4]
@@ -106,7 +105,7 @@ task cacheToMavenLocal(type: Copy) {
     //project.delete(files('E:/DEV/.m2') {})
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 	from new File(gradle.gradleUserHomeDir, 'caches/modules-2/files-2.1')
-	into 'E:/DEV/.m2'
+	into '/home/gogo/localRepo/.m2'
 	eachFile {
 	    List<String> parts = it.path.split('/')
 	    //it.path = (parts[0] + '/' + parts[1]).replace('.', '/') + '/' + parts[2] + '/' + parts[4] // 舊版寫法
@@ -197,5 +196,5 @@ task packAllDependencies {
 
 configure(packAllDependencies) {
     group = 'jenkins'
-    description = '建立離線Maven'
+    description = '下載並打包專案所有依賴到本地 Maven repo，離線可用'
 }
