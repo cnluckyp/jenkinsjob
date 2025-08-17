@@ -4,10 +4,15 @@ buildscript {
             maven {
                 url = uri('/home/jenkins/localRepo/.m2')
             }
+            /*
+            maven {
+                url = uri('/home/jenkins/localRepo/.m2')
+            }
             //mavenLocal()
             flatDir {
                 dirs '/home/jenkins/localRepo/needJar'
             }
+            */
         } else {
             gradlePluginPortal()
             mavenCentral()
@@ -22,12 +27,10 @@ buildscript {
 
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.4' apply false
-	id 'io.spring.dependency-management' version '1.1.7' apply false
+	id 'war'
+	id 'org.springframework.boot' version '3.5.4'
+	id 'io.spring.dependency-management' version '1.1.7'
 }
-
-apply plugin: 'org.springframework.boot'
-apply plugin: 'io.spring.dependency-management'
 
 group = 'idv.pd'
 version = '0.0.1-SNAPSHOT'
@@ -39,10 +42,6 @@ tasks.withType(JavaCompile) {
 }
 
 compileJava.dependsOn clean
-
-sourceSets.main.output.resourcesDir = file('$buildDir/resources')
-ext {
-}
 
 java {
 	toolchain {
@@ -62,10 +61,15 @@ repositories {
         maven {
             url = uri('/home/jenkins/localRepo/.m2')
         }
+        /*
+        maven {
+            url = uri('/home/jenkins/localRepo/.m2')
+        }
         //mavenLocal()
         flatDir {
-           dirs '/home/jenkins/localRepo/needJar'
+            dirs '/home/jenkins/localRepo/needJar'
         }
+        */
     } else {
         //gradlePluginPortal()
         mavenCentral()
@@ -136,4 +140,62 @@ configure(cacheToMavenLocal) {
 configure(printInfo) {
     group = 'jenkins'
     description = '印出資訊'
+}
+
+import org.gradle.api.artifacts.ResolvedArtifact
+
+// 設定本地 Maven repository 路徑
+def localRepoDir = file("$buildDir/offline-maven-repo")
+
+task packAllDependencies {
+    description = "下載並打包專案所有依賴到本地 Maven repo，離線可用"
+    group = "Build"
+
+    doLast {
+        println "開始打包所有依賴到本地 Maven repo: $localRepoDir"
+
+        // 遍歷所有可解析的 configuration
+        configurations.matching { it.canBeResolved }.each { conf ->
+            println "處理 configuration: ${conf.name}"
+
+            conf.resolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact artifact ->
+
+                // 構建對應目錄結構
+                def modulePath = "${artifact.moduleVersion.id.group.replace('.', '/')}/${artifact.name}/${artifact.moduleVersion.id.version}/"
+                def destDir = new File(localRepoDir, modulePath)
+                destDir.mkdirs()
+
+                // 複製 jar
+                def destJar = new File(destDir, "${artifact.name}-${artifact.moduleVersion.id.version}.jar")
+                artifact.file.withInputStream { is ->
+                    destJar.withOutputStream { os ->
+                        os << is
+                    }
+                }
+
+                // 生成簡單 pom 文件
+                def pomFile = new File(destDir, "${artifact.name}-${artifact.moduleVersion.id.version}.pom")
+                if (!pomFile.exists()) {
+                    pomFile.text = """
+                        <project>
+                            <modelVersion>4.0.0</modelVersion>
+                            <groupId>${artifact.moduleVersion.id.group}</groupId>
+                            <artifactId>${artifact.name}</artifactId>
+                            <version>${artifact.moduleVersion.id.version}</version>
+                        </project>
+                    """.stripIndent()
+                }
+
+                println "打包完成: ${artifact.name}-${artifact.moduleVersion.id.version}"
+            }
+        }
+
+        println "所有依賴已打包完成！"
+        println "離線使用時，在 build.gradle 設定 repositories { maven { url '$localRepoDir' } }"
+    }
+}
+
+configure(packAllDependencies) {
+    group = 'jenkins'
+    description = '建立離線Maven'
 }
