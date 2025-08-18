@@ -63,12 +63,17 @@ repositories {
     println project.gradle.startParameter.offline
     if (project.gradle.startParameter.offline) {
         maven {
+            url = uri("/home/gogo/localRepo/offline-maven-repo")
+        }
+        /*
+        maven {
             url = uri('/home/gogo/localRepo/.m2')
         }
-        //mavenLocal()
+        mavenLocal()
         flatDir {
-           dirs '/home/gogo/localRepo/needJar'
+            dirs '/home/gogo/localRepo/needJar'
         }
+        */
     } else {
         //gradlePluginPortal()
         mavenCentral()
